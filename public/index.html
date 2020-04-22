@@ -10,10 +10,19 @@
   <script>
     let vm = new Vue({
       el: '#app',
-      data: {
-        a: 'aaaa'
+      data() {
+        return {
+          name: 'sss',
+          age: 11,
+          address: {
+            number: 0,
+            name: 'xxx'
+          }
+        }
       }
     })
+    vm._data.address.name = 'andrew'
+    console.log(vm._data)
   </script>
 </body>
 </html>
