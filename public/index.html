@@ -6,27 +6,21 @@
   <title>Document</title>
 </head>
 <body>
+  <div id="app">
+    <p>{{ name }}</p>
+    <span>{{ age }}</span>
+  </div>
   <script src="/dist/umd/vue.js"></script>
   <script>
     let vm = new Vue({
       el: '#app',
       data() {
         return {
-          // name: 'sss',
-          // age: 11,
-          // address: {
-          //   number: 0,
-          //   name: 'xxx'
-          // }
-          name: [
-            {a: 1},
-            {b: 2}
-          ]
+          name: 'andrew',
+          age: 18
         }
       }
     })
-    vm._data.name.push({name: 'zf'})
-    console.log(vm._data.name)
   </script>
 </body>
 </html>

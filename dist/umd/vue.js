@@ -197,6 +197,11 @@
     observe(data); // 响应式原理
   }
 
+  // 虚拟DOM: 用对象来描述DOM节点 AST语法树: 用对象来描述原生语法
+  function compileToFunction(template) {
+    return function render() {};
+  }
+
   function initMixin(Vue) {
     // 初始化流程
     Vue.prototype._init = function (options) {
@@ -205,7 +210,31 @@
 
       vm.$options = options; // 初始化状态
 
-      initState(vm);
+      initState(vm); // 如果用户传入el属性 需要将页面渲染出来 实现挂载流程
+
+      if (vm.$options.el) {
+        vm.$mount(vm.$options.el);
+      }
+    };
+
+    Vue.prototype.$mount = function (el) {
+      var vm = this;
+      var options = vm.$options;
+      el = document.querySelector(el); // 默认先查找有没有render(), 没有的话会采用template, 还没有就使用el中的内容
+
+      if (!options.render) {
+        // 对模板进行编译
+        var template = options.template;
+
+        if (!template && el) {
+          template = el.outerHTML;
+        }
+
+        console.log(template); // 将template转化成render方法 vue2.0起->虚拟DOM
+
+        var render = compileToFunction();
+        options.render = render;
+      }
     };
   }
 
@@ -214,7 +243,7 @@
     this._init(options);
   }
 
-  initMixin(Vue);
+  initMixin(Vue); // 给vue原型添加_init方法
 
   return Vue;
 
