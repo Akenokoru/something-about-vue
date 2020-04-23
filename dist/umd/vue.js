@@ -49,6 +49,53 @@
   function isObject(data) {
     return _typeof(data) === 'object' && data !== null;
   }
+  function def(data, key, value) {
+    Object.defineProperty(data, key, {
+      enumerable: false,
+      configurable: false,
+      value: value
+    });
+  }
+
+  // 重写数组的基本方法 7个 push shift unshift pop reverse sort splice 会导致数组本身发生变化
+  // slice不会 因此不需要劫持
+  var oldArrayMethods = Array.prototype; // value.__proto__ = arrayMethods 原型链向上查找，先查找重写的，没有重写的继续向上查找
+
+  var arrayMethods = Object.create(oldArrayMethods);
+  var methods = ['push', 'shift', 'unshift', 'pop', 'sort', 'splice', 'reverse'];
+  methods.forEach(function (method) {
+    arrayMethods[method] = function () {
+      console.log("\u7528\u6237\u8C03\u7528\u4E86".concat(method, "\u65B9\u6CD5")); // AOP切片编程
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      var result = oldArrayMethods[method].apply(this, args); // 调用原生数组方法
+      // push unshift 添加的元素还可能是个对象
+
+      var inserted; // 当前插入的元素
+
+      var ob = this.__ob__;
+
+      switch (method) {
+        case 'push':
+        case 'unshift':
+          inserted = args;
+          break;
+
+        case 'splice':
+          //
+          inserted = args.slice(2);
+      }
+
+      if (inserted) {
+        ob.observerArray(inserted);
+      }
+
+      return result;
+    };
+  });
 
   var Observer = /*#__PURE__*/function () {
     function Observer(value) {
@@ -56,10 +103,27 @@
 
       // vue如果数据层次过多 需要递归解析对象中属性， 依次增加set和get方法
       // so vue3 -> proxy
-      this.copy(value);
+      def(value, '__ob__', this);
+
+      if (Array.isArray(value)) {
+        // 如果是数组，不对索引进行监控，会导致性能问题
+        // 前端开发中很少操作索引 push shift unshift
+        value.__proto__ = arrayMethods; //如果数组里是对象再监控
+
+        this.observerArray(value);
+      } else {
+        this.copy(value);
+      }
     }
 
     _createClass(Observer, [{
+      key: "observerArray",
+      value: function observerArray(value) {
+        for (var i = 0; i < value.length; i++) {
+          observe(value[i]);
+        }
+      }
+    }, {
       key: "copy",
       value: function copy(data) {
         var keys = Object.keys(data); // [name, age, address]
@@ -82,7 +146,8 @@
         return value;
       },
       set: function set(newValue) {
-        // 设置值的时候做一些事情
+        console.log('更新数据'); // 设置值的时候做一些事情
+
         if (newValue === value) {
           return;
         }
