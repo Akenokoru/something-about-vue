@@ -198,7 +198,66 @@
   }
 
   // 虚拟DOM: 用对象来描述DOM节点 AST语法树: 用对象来描述原生语法
+  var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // abc-aaa
+  // 一些正则
+
+  var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")"); // <aaa:asdads>
+
+  var startTagOpen = new RegExp("^<".concat(qnameCapture));
+  var startTagClose = /^\s*(\/?)>/;
+  var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
+
+  function parseHTML(html) {
+    while (html) {
+      // 不停地解析html
+      var textEnd = html.indexOf('<');
+
+      if (textEnd == 0) {
+        // 如果当前索引为0 肯定是一个标签 两种情况（开始标签，结束标签）
+        var startTagMatch = parseStartTag(); // 通过这个方法获取匹配的结果 tagName attrs
+
+        console.log(startTagMatch);
+        break;
+      }
+    }
+
+    function advance(n) {
+      html = html.substring(n);
+    }
+
+    function parseStartTag() {
+      var start = html.match(startTagOpen);
+
+      if (start) {
+        var match = {
+          tagName: start[1],
+          attrs: []
+        };
+        advance(start[0].length); // 将标签删除
+
+        var _end, attr;
+
+        while (!(_end = html.match(startTagClose)) && (attr = html.match(attribute))) {
+          // 将属性解析
+          advance(attr[0].length); // 将属性去掉
+
+          match.attrs.push({
+            name: attr[1],
+            value: attr[3] || attr[4] || attr[5]
+          });
+        }
+
+        if (_end) {
+          // 去掉开始标签的>
+          advance(_end[0].length);
+          return match;
+        }
+      }
+    }
+  }
+
   function compileToFunction(template) {
+    var root = parseHTML(template);
     return function render() {};
   }
 
@@ -232,7 +291,7 @@
 
         console.log(template); // 将template转化成render方法 vue2.0起->虚拟DOM
 
-        var render = compileToFunction();
+        var render = compileToFunction(template);
         options.render = render;
       }
     };
